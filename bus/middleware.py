@@ -16,6 +16,6 @@ class SimpleMiddleware(object):
 
 	def __call__(self, request):
 
-		print('hi')
+		print('hix')
 		response = self.get_response(request)
 		return response		

@@ -1,0 +1,70 @@
+<!doctype html>
+<html lang="en">
+ 	<head>
+    <!-- Required meta tags -->
+    <meta charset="utf-8">
+
+    <!--JQUERY-->
+    <script src="https://code.jquery.com/jquery-3.3.1.min.js" crossorigin="anonymous"></script>
+
+    <title>{{ title }}</title>
+ 	</head>
+
+	<body>
+		<ul id='processes'>
+		</ul>
+		<script type="text/javascript">
+			proc_dict = {}
+			function assign_processes(process_dict)
+			{
+				proc_dict = process_dict;
+
+				process_ul = $('#processes');
+				process_ul.empty();
+				if (Object.keys(process_dict).length == 0){
+					process_ul.append('<li>На данный момент запущенных процессов нет</li>');
+				}
+				else
+				{
+					var i=0;
+					for(var proc in process_dict){
+						process_ul.append(
+							'<li id="'+ i +'"> id: ' + proc + 
+								', name: ' + process_dict[proc].process_name + 
+								', script_name: ' + process_dict[proc].script_name +
+								', state: ' + process_dict[proc].state+
+								', params:' + JSON.stringify(process_dict[proc].params)+
+								' </li>'
+							)
+					}
+				}	
+			}
+
+			function request_process()
+			{
+				var responce = $.ajax({
+			        async:false,
+			        method:'GET',
+			        url:'process_list',
+
+			        //headers: { "X-CSRFToken": token },
+
+			        //data:for_request,
+			        success: function(msg)
+			        {
+			          console.log(msg);
+			          assign_processes(msg);
+			        },
+			        error: function(jqXHR, textStatus, errorThrown)
+			        {
+			          console.log(JSON.stringify(jqXHR));
+			        }
+
+			      }).responceText;
+			}
+			window.onload = function(){
+				t=setInterval(request_process,1000);
+			}
+		</script>
+	</body>
+</html>	    

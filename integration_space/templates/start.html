@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="en">
+ 	<head>
+    <!-- Required meta tags -->
+    <meta charset="utf-8">
+    <title>{{ title }}</title>
+ 	</head>
+
+	<body>
+		<form id = "message-form" method = "POST" class = 'message-form'>
+			<div class='form-group row'>
+				<h2 class='col'>Обращение</h2>
+			</div>
+
+
+		{% csrf_token %}
+		{% for field in form.visible_fields %}
+			<div class="form-group row">
+		        {{ field.errors }}
+		        <div class="col-sm-2 col-form-label">{{ field.label_tag }}</div>
+		        <div class="col"> {{ field }} </div>
+		    </div>
+		{% endfor %}
+		<button type="submit">Запустить</button>
+	</body>
+</html>	    

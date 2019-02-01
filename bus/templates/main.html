@@ -15,6 +15,10 @@
 		</ul>
 		<script type="text/javascript">
 			proc_dict = {}
+
+			function send(message){
+				t=setInterval(socket.send(message), 1000);
+			}
 			function assign_processes(process_dict)
 			{
 				proc_dict = process_dict;
@@ -62,8 +66,17 @@
 
 			      }).responceText;
 			}
+
+			var socket;
 			window.onload = function(){
-				t=setInterval(request_process,1000);
+				//t=setInterval(request_process,1000);
+				socket = new WebSocket("ws://localhost:10003");
+                                				
+				socket.onmessage = function(event) {
+				  console.log(event.data);
+				};	
+							
+
 			}
 		</script>
 	</body>

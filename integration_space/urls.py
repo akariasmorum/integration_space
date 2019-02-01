@@ -15,9 +15,6 @@ Including another URLconf
 """
 from django.urls import path, include
 from django.contrib import admin
-import asyncio
-import websockets
-from .websocket_view import echo
 
 urlpatterns = [
     path(r'^admin/', admin.site.urls),
@@ -26,6 +23,3 @@ urlpatterns = [
 ]
 
 
-asyncio.get_event_loop().run_until_complete(
-    websockets.serve(echo, 'localhost', 8765))
-asyncio.get_event_loop().run_forever()

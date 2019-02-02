@@ -16,9 +16,11 @@
 		<script type="text/javascript">
 			proc_dict = {}
 
-			function send(message){
-				t=setInterval(socket.send(message), 1000);
+			function send(socket, message){
+				socket.send('how much');
+				socket.send('is the fish');
 			}
+			
 			function assign_processes(process_dict)
 			{
 				proc_dict = process_dict;
@@ -67,15 +69,19 @@
 			      }).responceText;
 			}
 
-			var socket;
+			
 			window.onload = function(){
 				//t=setInterval(request_process,1000);
-				socket = new WebSocket("ws://localhost:10003");
+				var socket;
+				socket = new WebSocket("ws://localhost:10006");
                                 				
 				socket.onmessage = function(event) {
 				  console.log(event.data);
 				};	
-							
+				socket.onopen = function() {
+			    	setInterval(function(){send(socket, 'hello ws')}, 5000);
+			    }	
+				
 
 			}
 		</script>

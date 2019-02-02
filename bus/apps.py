@@ -12,6 +12,3 @@ class BusConfig(AppConfig):
 		p = Process(target=ready_x, args=(), name = 'web_socket_listener')
 		p.start()
 
-
-		
-

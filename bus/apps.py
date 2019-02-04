@@ -4,6 +4,7 @@ from multiprocessing import Process
 
 from .websocket import ready_x
 
+
 class BusConfig(AppConfig):
 	name = 'bus'
 	

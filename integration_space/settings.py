@@ -27,6 +27,8 @@ DEBUG = True
 
 ALLOWED_HOSTS = []
 
+PROCESS_TO_SERVER_WS_PORT = 10016
+SERVER_TO_BROWSER_WS_PORT = 10017
 
 # Application definition
 

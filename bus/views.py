@@ -4,12 +4,11 @@ from pathlib import Path
 
 import importlib.util
 import uuid
-from multiprocessing import Process
+from multiprocessing import Process, Value
 import json
 from .forms import Start_script_form
 import subprocess, signal, time, os
 from django.conf import settings
-
 import websockets
 import asyncio
 
@@ -28,44 +27,38 @@ SCRIPT_FOLDER  = (CURRENT_FOLDER / 'scripts')
 
 class Process_list:
 
-	def __init__(self, websocket_call=None):
+	def __init__(self):
 		
 		self.process_dict = {}
 
-		e = Process(target=self.init_websocket_client, args=(), name = 'process_socket_listener')
-		e.start()
+		''''listener = Process(target = self.conn, args=())
+		listener.start()'''
 		
-
-
-	def init_websocket_client(self):
-		'''
-			Создает цикл для вебсокет-клиента
-		'''
-		loop = asyncio.get_event_loop()
-		print('стартую')
-		loop.run_until_complete(self.y())
-		loop.run_forever()	
 		
+	def conn(self):
+		loop = asyncio.new_event_loop()
+		loop.run_until_complete(self.connect_socket())
+		loop.run_forever()
 
-	async def y(self):
-		await asyncio.gather(
-				self.websocket_listener()
-			)	
-
-
-	async def websocket_listener(self):
-		adress= 'ws://localhost:{port}'.format(port= settings.PROCESS_TO_SERVER_WS_PORT)
-		print('adress: {0}'.format(adress))
-		async with websockets.connect(adress) as websocket:
-			print('connected')
-			#сохранить веб-сокет для того, чтобы по нему пересылать сообщения
-			self._websocket = websocket
+	async def connect_socket(self):
+		adress = 'ws://localhost:{port}'.format(port = settings.PROCESS_TO_SERVER_WS_PORT)
+		async with websockets.connect(adress) as websocket:    		
 			while True:
 				message = await websocket.recv()
-				#при получении сообщения, передать его в функция, которая
-				#определит что делать с этим сообщением
-				self.process_controller_view(message)
+				print(message)
 
+
+
+	async def send(self, message):
+		adress = 'ws://localhost:{port}'.format(port = settings.PROCESS_TO_SERVER_WS_PORT)
+		async with websockets.connect(adress) as websocket:
+			print('С ПОДКЛЮЧЕНИЕМ"!')
+			await websocket.send(message)
+
+	def send_state_a(self, message):
+		loop = asyncio.new_event_loop()
+		loop.run_until_complete(self.send(message))
+		loop.close()
 
 	def process_controller_view(self, message):
 		jR = json.loads(message)
@@ -79,17 +72,25 @@ class Process_list:
 		elif command == 'TERMINATE':
 			self.terminate_process(pid)		
 	
+
 	def send_state(self):
-		loop = asyncio.get_event_loop()
-		loop.run_until_complete(self._websocket.send(self.process_dict))
+		print('send state dict:')
+		try:
+			print(str(self.process_dict))
+			send_process = Process(target = self.send_state_a, args = (str(self.process_dict),))
+			send_process.start()
+			send_process.join()
+
+		except Exception as Ex:
+			print(Ex)	
 
 		
 	def change_function_wrapper(self):
-		if hasattr(self, '_websocket'):
+		self.send_state()
+		'''if hasattr(self, '_websocket'):
 			self.send_state()			
 		else:
-			print('Нет сокета для отсылки состояния')	
-
+			print('Нет сокета для отсылки состояния')	'''
 
 	
 	def insert_process(self, pid, process_name, script_name, params):
@@ -107,7 +108,6 @@ class Process_list:
 		self.change_function_wrapper()
 
 
-
 	def stop_process(self, pid):
 		if self.process_dict[pid] == 'RUNNING':
 			os.kill(pid, signal.SIGSTOP)
@@ -115,6 +115,7 @@ class Process_list:
 			self.change_function_wrapper()
 		else:
 			print('already stopped')	
+
 
 	def continue_process(self, pid):
 		if self.process_dict[pid] == 'STOPED':
@@ -124,6 +125,7 @@ class Process_list:
 		else:
 			print('already running')	
 
+
 	def terminate_process(self, pid):
 		if process_dict.get(pid):
 			os.kill(pid, signal.SIGTERM)
@@ -132,9 +134,88 @@ class Process_list:
 		else:
 			print('where is no proccess with such pid')	
 
+
 	def __delete_process_from_process_list(self, pid):
 		process_dict.pop(pid, None)
 
+
+class process_browser_transmitter:
+
+	def __init__(self):
+		
+		self.pw_socket = None
+		self.wb_socket = None
+
+
+	async def ready(self):
+
+		await asyncio.gather(
+			websockets.serve(self.process_ws, 'localhost', settings.PROCESS_TO_SERVER_WS_PORT),
+			websockets.serve(self.ws_browser, 'localhost', settings.SERVER_TO_BROWSER_WS_PORT),
+		)
+
+
+	def send(self, message):
+		print('ws message:')
+		print(message)
+		loop = asyncio.new_event_loop()
+		loop.run_until_complete(self.wb_socket.send(message))
+		loop.close()
+
+
+	async def process_ws(self, websocket, path):
+		'''
+			Ждет сообщения от сокета "процессы - сервер вебсокетов"
+			и пересылает сообщения сокету "сервер вебсокетов - веб браузер"
+		'''
+
+		#при подключении сохранить текущий сокет, чтобы другой мог к этому подключиться
+
+		self.pw_socket = websocket
+		print('ПРОЦЕССЫ ПОДКЛЮЧИЛИСЯ')
+		print(self.pw_socket)
+
+		while True:
+			mess = await websocket.recv()
+			print(mess)
+			if self.wb_socket!=None:
+				await self.wb_socket.send(mess)
+			else:
+				print('нет соединения с браузер')	
+		
+
+	async def ws_browser(self, websocket, path):
+		'''
+			Ждет сообщения от сокета "сервер вебсокетов - браузер"
+			и пересылает сообщения сокету "процессы  - сервер вебсокетов"
+		'''
+
+		#при подключении сохранить текущий сокет, чтобы другой мог к этому подключиться
+		
+		self.wb_socket = websocket
+		print('БРАУЗЕР ПОДКЛЮЧИЛСЯ')
+		print(self.wb_socket)
+		
+		while True:
+			mess = await websocket.recv()
+			print(mess)
+			if self.pw_socket!=None:
+				await self.pw_socket.send(mess)
+			else:
+				print('нет соединения с процессами')	
+
+def ready_x():
+	
+	loop = asyncio.new_event_loop()
+	loop.run_until_complete(websocket_server.ready())
+	loop.run_forever()
+
+
+websocket_server = process_browser_transmitter()
+websocket_server_process = Process(target = ready_x, args=())
+websocket_server_process.start()
+
+processes = Process_list()
 
 def script_list_view(request):
 	return JsonResponse(get_scripts_list(), safe = False)
@@ -185,10 +266,9 @@ def get_scripts_list():
 	return file_list
 
 
-process_list = Process_list()
 
 def get_process_list():
-	return process_list
+	return processes.process_dict
 
 
 def _start_script(name, priority, params):
@@ -200,7 +280,7 @@ def _start_script(name, priority, params):
 
 		print(p.name + " started")
 
-		process_list.insert_process(
+		processes.insert_process(
 			p.pid,
 			p.name ,					
 			name,
@@ -210,7 +290,7 @@ def _start_script(name, priority, params):
 		p.join()
 
 		print(p.name + " stoped")
-		process_list.delete_process(p.pid);
+		processes.delete_process(p.pid);
 
 		return True
 		
@@ -219,6 +299,11 @@ def _start_script(name, priority, params):
 		return False
 
 ########################################################
+
+
+
+
+
 class ScriptExecutor:
 
 	def __init__(self, name, priority):

@@ -6,20 +6,164 @@
 
     <!--JQUERY-->
     <script src="https://code.jquery.com/jquery-3.3.1.min.js" crossorigin="anonymous"></script>
-
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.2.1/css/bootstrap.min.css" integrity="sha384-GJzZqFGwb1QTTN6wy59ffF1BuGJpLSa9DkKMp0DgiMDm4iYMj70gZWKYbI706tWS" crossorigin="anonymous">
     <title>{{ title }}</title>
+    <style type="text/css">
+    	body{
+    		margin:0px;
+    		padding: 0px;
+    		/*background: #7474BF;  /* fallback for old browsers */
+			/*background: -webkit-linear-gradient(to right, #348AC7, #7474BF);  /* Chrome 10-25, Safari 5.1-6 */
+			/*background: linear-gradient(to right, #348AC7, #7474BF); /* W3C, IE 10+/ Edge, Firefox 16+, Chrome 26+, Opera 12+, Safari 7+ */
+
+    	}
+    	.row{
+    		margin:5px;
+    	}
+    	
+    	.containers{
+    		-webkit-border-radius: 3px;
+			-moz-border-radius: 3px;
+			border-radius: 3px;
+			border: 1px dotted #000000;
+			
+    	}
+    	.left-cont{
+    		height:400px;
+    		width:100%;
+    	}
+    	.right-cont{
+    		height:840px;
+    		
+    		width:100%;
+    	}
+    	.process-handle-button{
+    		margin:4px;
+    	}
+    	.li-x{
+    		margin: 5px;
+    		text-align: right;
+    	}
+    	.li-x:hover{
+    		-webkit-border-radius: 3px;
+			-moz-border-radius: 3px;
+			border-radius: 3px;
+    		color:white;
+    		background: #2E294E;
+
+    	}
+    	
+    </style>
  	</head>
 
 	<body>
-		<form>
+		
+			<div class='row h-100'>
+				<div class='col-4'>
+					<div class = 'row'>
+						<div id='scripts' class='containers left-cont'>
+							<ul id='scripts_ul' class='list-unstyled'></ul>
+						</div>
+						
+					</div>	
+					<div class='row'>
+						<div class='col'>
+							<button>Старт</button>
+						</div>
+					</div>
+
+					
+						
+					<div class='row'>
+						<div id='processes' class='containers left-cont'>
+							b
+						</div>						
+					</div>
+					<div class='row'>
+						<div class='col'>
+							<button>Pause</button>
+						</div>
+						<div class='col'>
+							<button>Continue</button>
+						</div>
+						<div class='col'>
+							<button>Terminate</button>
+						</div>
+					</div>
+
+				</div>	
+				<div class='col-8'>
+					<div class='row '>
+						<div id='code' class='containers right-cont'>
+								c
+						</div>
+					</div>	
+				</div>
+			</div>
+
+		
+		<script type="text/javascript">
+			
+			/*<form>
 			<input id = 'a' type="text"><br>
 		</form>
-		<button onclick="press()"> Отправить </button>
-		<ul id='processes'>
+		<button onclick="press()"> Отправить </button> <ul id='processes'>
 
-		</ul>
-		<script type="text/javascript">
-			proc_dict = {}
+		</ul>*/
+
+			var SCRIPT_UL = $('#scripts_ul');
+			var SELECTED_SCRIPT = null;
+
+			function request(method, url, headers, data, suc_function){
+				var responce = $.ajax({
+			        async:false,
+			        method:method,
+			        url:url,
+			        headers: headers,
+			        data:data,
+			        success: function(msg)
+			        {
+			          console.log(msg);
+			          suc_function(msg);
+			        },
+			        error: function(jqXHR, textStatus, errorThrown)
+			        {
+			          console.log(JSON.stringify(jqXHR));
+			        }
+
+			      }).responceText;
+			}
+
+			function request_scripts(){
+				request('GET', 'script_list', null, null, render_scripts);
+			}
+
+			function start_script(){
+				request('POST', 'start_script', null, {
+					"name": $
+				})
+			}
+
+			function render_scripts(script_list){
+				$(SCRIPT_UL).empty()
+				for(var script in script_list){
+					$(SCRIPT_UL).append('<li class="li-x">' + script_list[script] + '</li>');
+				}
+
+
+				$( "#scripts_ul li" ).each(function(index) {
+				    $(this).on("click", function(){
+				        // For the boolean value
+				        if (SELECTED_SCRIPT!=null){
+				        	$(SELECTED_SCRIPT).css({'background-color':'#fff', 'color': 'black'});	
+				        }
+				        SELECTED_SCRIPT = $(this);
+				        $(this).css({'background-color':'#2E294E', 'color': 'white'})
+				        
+				    });
+				});
+
+			}
 
 			function press(){
 				send(socket, $('#a').val());
@@ -81,7 +225,9 @@
 			window.onload = function(){
 				//t=setInterval(request_process,1000);
 				
-				socket = new WebSocket("ws://localhost:{{ port }}");
+				request_scripts();
+
+				/*socket = new WebSocket("ws://localhost:{{ port }}");
                                 				
 				socket.onmessage = function(event) {
 				  console.log(event.data);
@@ -89,8 +235,7 @@
 
 				socket.onopen = function() {
 			    	console.log('Открыто');
-			    }	
-				
+			    }*/				
 
 			}
 		</script>

@@ -33,32 +33,19 @@ class Process_list:
 
 		''''listener = Process(target = self.conn, args=())
 		listener.start()'''
-		
-		
-	def conn(self):
+
+
+	def send_state_a(self, message):
 		loop = asyncio.new_event_loop()
-		loop.run_until_complete(self.connect_socket())
-		loop.run_forever()
-
-	async def connect_socket(self):
-		adress = 'ws://localhost:{port}'.format(port = settings.PROCESS_TO_SERVER_WS_PORT)
-		async with websockets.connect(adress) as websocket:    		
-			while True:
-				message = await websocket.recv()
-				print(message)
-
-
+		loop.run_until_complete(self.send(message))
+		loop.close()
 
 	async def send(self, message):
 		adress = 'ws://localhost:{port}'.format(port = settings.PROCESS_TO_SERVER_WS_PORT)
 		async with websockets.connect(adress) as websocket:
 			print('С ПОДКЛЮЧЕНИЕМ"!')
 			await websocket.send(message)
-
-	def send_state_a(self, message):
-		loop = asyncio.new_event_loop()
-		loop.run_until_complete(self.send(message))
-		loop.close()
+			
 
 	def process_controller_view(self, message):
 		jR = json.loads(message)
@@ -137,6 +124,45 @@ class Process_list:
 
 	def __delete_process_from_process_list(self, pid):
 		process_dict.pop(pid, None)
+
+
+class websocket_client():
+
+
+	def __init__(self):	
+		pass
+
+
+	def conn(self):
+		self.loop = asyncio.new_event_loop()		
+		self.loop.run_until_complete(self.connect_socket())
+		self.loop.run_forever()
+
+	def send(message):
+		self.loop.run_until_complete(self.send(message))
+
+
+	async def connect_socket(self):
+		adress = 'ws://localhost:{port}'.format(port = settings.PROCESS_TO_SERVER_WS_PORT)
+		async with websockets.connect(adress) as websocket:    		
+			while True:
+				message = await websocket.recv()
+				print(message)
+
+
+	async def send(self):
+		adress = 'ws://localhost:{port}'.format(port = settings.PROCESS_TO_SERVER_WS_PORT)
+		async with websockets.connect(adress) as websocket:
+			print('С ПОДКЛЮЧЕНИЕМ"!')
+			await websocket.send(message)	
+
+	async def receive_process():
+		pass
+
+
+
+
+
 
 
 class process_browser_transmitter:
@@ -226,24 +252,20 @@ def process_list_view(request):
 
 
 def start_script_view(request):
+
 	if request.method == 'POST':
-		form = Start_script_form(request.POST)
+		
+		name = request.POST.get('name');
+		name = request.POST.get('priority');
+		params = request.POST.get('params');
+		print('HEHEI!', name, priority, params)
+		jP = json.loads(params) or None
+		answer = _start_script(name, priority, jP)
 
-		if form.is_valid():
-			print('hehei {0}'.format(form.cleaned_data))
-			name = form.cleaned_data['name']
-			priority = form.cleaned_data['priority']
-			params = form.cleaned_data['params']
-			print('HEHEI!', name, priority, params)
-
-			jP = json.loads(params) or None
-
-			answer = _start_script(name, priority, jP)
-
-			if answer == True:
-				return JsonResponse({'result': 'started'})
-			else:
-				return JsonResponse({'result': 'Error'})
+		if answer == True:
+			return JsonResponse({'result': 'started'})
+		else:
+			return JsonResponse({'result': 'Error'})
 	else:
 		form = Start_script_form()
 
@@ -308,8 +330,9 @@ class ScriptExecutor:
 
 	def __init__(self, name, priority):
 		self.name = name
-		self.path = CURRENT_FOLDER / name
+		self.path = SCRIPT_FOLDER / name
 		self.priority = priority
+
 	
 
 	def execute(self, **kwargs):

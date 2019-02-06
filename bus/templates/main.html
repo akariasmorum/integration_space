@@ -115,16 +115,16 @@
 			var SCRIPT_UL = $('#scripts_ul');
 			var SELECTED_SCRIPT = null;
 
-			function request(method, url, headers, data, suc_function){
+			function request(method, url, headers, data, timeout, suc_function){
 				var responce = $.ajax({
-			        async:false,
+			        async: true,
 			        method:method,
 			        url:url,
 			        headers: headers,
 			        data:data,
+			        timeout: timeout,
 			        success: function(msg)
 			        {
-			          console.log(msg);
 			          suc_function(msg);
 			        },
 			        error: function(jqXHR, textStatus, errorThrown)
@@ -136,7 +136,7 @@
 			}
 
 			function request_scripts(){
-				request('GET', 'script_list', null, null, render_scripts);
+				request('GET', 'script_list', null, null, 5000, render_scripts);
 			}
 
 
@@ -145,7 +145,7 @@
 					"name": $(SELECTED_SCRIPT).text(),
 					"priority": 2,
 					"params": '{"n": 25}',
-				}, x);
+				}, 200, null);
 			}
 
 

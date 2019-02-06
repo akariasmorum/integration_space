@@ -11,10 +11,12 @@ import subprocess, signal, time, os
 from django.conf import settings
 import websockets
 import asyncio
+from django.views.decorators.csrf import csrf_exempt
+
 
 # Create your views here.
 def main(request):
-	return render(request, 'main.html',  context = {'title': 'Главная страница', 'port': settings.PROCESS_TO_SERVER_WS_PORT})	
+	return render(request, 'main.html',  context = {'title': 'Главная страница', 'port': settings.SERVER_TO_BROWSER_WS_PORT})	
 
 def main2(request):
 	return render(request, 'main2.html', context = {'title': 'Главная страница', 'port': settings.SERVER_TO_BROWSER_WS_PORT})	
@@ -205,7 +207,7 @@ class process_browser_transmitter:
 			mess = await websocket.recv()
 			print(mess)
 			if self.wb_socket!=None:
-				await self.wb_socket.send(mess)
+				await self.wb_socket.send(str(mess))
 			else:
 				print('нет соединения с браузер')	
 		
@@ -250,28 +252,25 @@ def script_list_view(request):
 def process_list_view(request):
 	return JsonResponse(get_process_list(), safe = False)
 
-
+@csrf_exempt
 def start_script_view(request):
 
 	if request.method == 'POST':
 		
 		name = request.POST.get('name');
-		name = request.POST.get('priority');
+		priority = request.POST.get('priority');
 		params = request.POST.get('params');
-		print('HEHEI!', name, priority, params)
+				
 		jP = json.loads(params) or None
+		print('HEHEI!', name, priority, jP)
 		answer = _start_script(name, priority, jP)
-
+		
 		if answer == True:
 			return JsonResponse({'result': 'started'})
 		else:
 			return JsonResponse({'result': 'Error'})
-	else:
-		form = Start_script_form()
-
-	return render(request, 'start.html', context = {'title': 'Выполнить скрипт', 'form': form})	
-
-
+	
+	
 ################################
 
 
@@ -303,7 +302,7 @@ def _start_script(name, priority, params):
 		print(p.name + " started")
 
 		processes.insert_process(
-			p.pid,
+			str(p.pid),
 			p.name ,					
 			name,
 			params,
@@ -312,7 +311,7 @@ def _start_script(name, priority, params):
 		p.join()
 
 		print(p.name + " stoped")
-		processes.delete_process(p.pid);
+		processes.delete_process(str(p.pid));
 
 		return True
 		

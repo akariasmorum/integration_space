@@ -50,7 +50,13 @@
 			border-radius: 3px;
     		color:white;
     		background: #2E294E;
-
+    	}
+    	.lihover{
+    		-webkit-border-radius: 3px;
+			-moz-border-radius: 3px;
+			border-radius: 3px;
+    		color:white;
+    		background: #2E294E;	
     	}
     	
     </style>
@@ -68,7 +74,7 @@
 					</div>	
 					<div class='row'>
 						<div class='col'>
-							<button>Старт</button>
+							<button onclick='start_script()'>Старт</button>
 						</div>
 					</div>
 
@@ -76,7 +82,8 @@
 						
 					<div class='row'>
 						<div id='processes' class='containers left-cont'>
-							b
+							<ul id='processes_ul' class='list-unstyled'>
+							</ul>
 						</div>						
 					</div>
 					<div class='row'>
@@ -104,12 +111,6 @@
 		
 		<script type="text/javascript">
 			
-			/*<form>
-			<input id = 'a' type="text"><br>
-		</form>
-		<button onclick="press()"> Отправить </button> <ul id='processes'>
-
-		</ul>*/
 
 			var SCRIPT_UL = $('#scripts_ul');
 			var SELECTED_SCRIPT = null;
@@ -131,18 +132,27 @@
 			          console.log(JSON.stringify(jqXHR));
 			        }
 
-			      }).responceText;
+			      });
 			}
 
 			function request_scripts(){
 				request('GET', 'script_list', null, null, render_scripts);
 			}
 
+
 			function start_script(){
 				request('POST', 'start_script', null, {
-					"name": $
-				})
+					"name": $(SELECTED_SCRIPT).text(),
+					"priority": 2,
+					"params": '{"n": 25}',
+				}, x);
 			}
+
+
+			function x(msg){
+				return 1;
+			}
+
 
 			function render_scripts(script_list){
 				$(SCRIPT_UL).empty()
@@ -155,10 +165,10 @@
 				    $(this).on("click", function(){
 				        // For the boolean value
 				        if (SELECTED_SCRIPT!=null){
-				        	$(SELECTED_SCRIPT).css({'background-color':'#fff', 'color': 'black'});	
+				        	$(SELECTED_SCRIPT).removeClass('lihover');	
 				        }
 				        SELECTED_SCRIPT = $(this);
-				        $(this).css({'background-color':'#2E294E', 'color': 'white'})
+				        $(this).addClass('lihover');
 				        
 				    });
 				});
@@ -173,12 +183,14 @@
 				socket.send(message);				
 			}
 			
-			function assign_processes(process_dict)
+			function assign_processes(str_json)
 			{
-				proc_dict = process_dict;
-
-				process_ul = $('#processes');
+				let changed = str_json.replace(/\'/g, '"');
+				console.log(changed);
+				let process_dict = JSON.parse(changed);
+				let process_ul = $('#processes_ul');
 				process_ul.empty();
+				
 				if (Object.keys(process_dict).length == 0){
 					process_ul.append('<li>На данный момент запущенных процессов нет</li>');
 				}
@@ -187,7 +199,7 @@
 					var i=0;
 					for(var proc in process_dict){
 						process_ul.append(
-							'<li id="'+ i +'"> id: ' + proc + 
+							'<li class = "li-x" id="'+ i +'"> id: ' + proc + 
 								', name: ' + process_dict[proc].process_name + 
 								', script_name: ' + process_dict[proc].script_name +
 								', state: ' + process_dict[proc].state+
@@ -198,44 +210,22 @@
 				}	
 			}
 
-			function request_process()
-			{
-				var responce = $.ajax({
-			        async:false,
-			        method:'GET',
-			        url:'process_list',
-
-			        //headers: { "X-CSRFToken": token },
-
-			        //data:for_request,
-			        success: function(msg)
-			        {
-			          console.log(msg);
-			          assign_processes(msg);
-			        },
-			        error: function(jqXHR, textStatus, errorThrown)
-			        {
-			          console.log(JSON.stringify(jqXHR));
-			        }
-
-			      }).responceText;
-			}
-
 			var socket;
 			window.onload = function(){
 				//t=setInterval(request_process,1000);
 				
 				request_scripts();
 
-				/*socket = new WebSocket("ws://localhost:{{ port }}");
+				socket = new WebSocket("ws://localhost:{{ port }}");
                                 				
 				socket.onmessage = function(event) {
 				  console.log(event.data);
+				  assign_processes(event.data);
 				};	
 
 				socket.onopen = function() {
 			    	console.log('Открыто');
-			    }*/				
+			    }				
 
 			}
 		</script>
